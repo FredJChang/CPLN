@@ -43,10 +43,11 @@ def nerthus_split(args):
 
 class Nerthus(Dataset):
 
-    def __init__(self, args, image, targets, train=False, eval_train=False):
+    def __init__(self, args, image, targets, clean_targets=None, train=False, clean=False):
 
         super(Dataset, self).__init__()
-        self.eval_train = eval_train
+        self.clean = clean
+        self.clean_targets = clean_targets
         self.train = train
         self.image = image
         self.targets = targets
@@ -95,12 +96,21 @@ class Nerthus(Dataset):
         label = F.one_hot(torch.tensor(label), num_classes = self.n_classes)
         study = image_path
         
-        weak_image = self.weak_transform(image)
-        # weak_image = cutout(weak_image)
+        strong_image = self.strong_transform(image)
+        strong_image = cutout(strong_image)
+        
+        
+        
+        
+        if self.clean == True:
+            clean_targets = self.clean_targets[index]
+            
+            return dict(index=index, image_array = image_array, label = label, study = study, clean_targets = clean_targets,
+                base_image = self.base_transform(image), weak_image = self.weak_transform(image), strong_image = strong_image)
         
         if self.train == True:
             return dict(index=index, image_array = image_array, label = label, study = study, 
-                        base_image = self.base_transform(image), weak_image = weak_image, strong_image = self.strong_transform(image))
+                        base_image = self.base_transform(image), weak_image = self.weak_transform(image), strong_image = strong_image)
                         
 
         return dict(index=index, image_array = image_array,
