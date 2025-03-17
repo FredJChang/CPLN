@@ -178,16 +178,6 @@ def train_pseudo_history(args, train_loader, val_dataloader, test_dataloader, mo
     global lr
     
     iters = []
-    new_correct = []
-    old_correct = []
-    easy_accuracies = []
-    fix_accuracies = []
-    easy_counts = []
-    fix_counts = []
-    
-    class_means = torch.zeros(n_class)
-    class_stds = torch.ones(n_class)
-    class_counts = torch.zeros(n_class)
     
     model.train()
 
