@@ -270,7 +270,7 @@ def train_pseudo_history(args, train_loader, val_dataloader, test_dataloader, mo
         
         noise_mask = ~clean_mask 
  
-        if torch.any(hard_mask):
+        if torch.any(noise_mask):
             mixed_image, y_a, y_b, lam= mixup_tru_unc(l_image, img_ulb_s[noise_mask], l_target, probs[noise_mask])
             feat, output_mix = model(mixed_image)
             mix_loss = mixup_criterion(output_mix, y_a, y_b, lam)
@@ -309,7 +309,7 @@ def train_pseudo_history(args, train_loader, val_dataloader, test_dataloader, mo
         optimizer.step()
 
         if (curr_iter + 1) % args.num_eval_iters == 0:        
-            val_loss, AUROCs, Accus, Senss, Specs, Pre, Recall, F1 = epochVal_metrics(model, val_dataloader, mode='val')
+            # val_loss, AUROCs, Accus, Senss, Specs, Pre, Recall, F1 = epochVal_metrics(model, val_dataloader, mode='val')
             test_loss, test_AUROCs, test_Accus, test_Senss, test_Specs, test_Pre, test_Recall, test_F1 = epochVal_metrics(model, test_dataloader, mode='test') 
             
         update_ema_variables(model, ema_model1, 0.9, curr_iter)
