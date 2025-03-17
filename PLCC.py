@@ -5,10 +5,6 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--warmup_epoch', type=int,  default=30, help='warmup epoch')
-parser.add_argument('--train_pseudo_history_epoch', type=int, default=50)
-parser.add_argument('--global_epoch', type=int, default=10, help='maximum epoch number to train')
-parser.add_argument('--epoch_decay_start', type=int, default=10, help='epoch from which to start lr decay')
 
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--batch_size', type=int, default=64, help='training batch size')
@@ -174,14 +170,11 @@ def history_clean(args, recorder1, recorder2, train_loader, model, label_num, da
 
     error_rate(args, model, datamaker, logits_combined_avg_array, clean_indices, label_num)
 
-
-
     clean_index = clean_indices #+ list(range(label_num)) # add label data
     dataset = datamaker.train_dataset
     real_indices = list(range(len(dataset)))
     
     clean_set = Subset(dataset, clean_index)
-    
     clean_loader = DataLoader(clean_set, batch_size=args.batch_size, num_workers=8, pin_memory=True)
      
     
@@ -230,6 +223,64 @@ def history_clean(args, recorder1, recorder2, train_loader, model, label_num, da
     # after gmm ratio
     # error_rate(args, model, datamaker, logits_combined_avg_array, clean_index, label_num) 
 
+def train_pseudo(args, clean_dataloader, val_dataloader, test_dataloader, model, optimizer, model1):
+    global lr
+    best_auc = 0
+    best_loss = np.inf
+    best_epoch = 1
+    best_acc = 0
+    curr_iter = 0
+    
+    model1.load_state_dict(model.state_dict())
+    losses = AverageMeter()
+    features, labels, images= [], [], []
+    
+    model.train()
+    bar = tqdm(range(len(clean_dataloader)))
+    for batch_idx, batch in enumerate(clean_dataloader):
+        # index, image_b, image_w, image_s, label, clean = batch['index'], batch['base_image'].cuda(), batch['weak_image'].cuda(), batch['strong_image'].cuda(), batch['label'].cuda(), batch["clean_targets"].cuda()
+        index, image_b, image_w, image_s, label = batch['index'], batch['base_image'].cuda(), batch['weak_image'].cuda(), batch['strong_image'].cuda(), batch['label'].cuda()
+
+        feat, output = model(image_b)
+        ce = CE_mean(output, label.float()) 
+        
+        label = torch.argmax(label, dim=1)
+        preds = output.argmax(dim=1)
+
+        loss = ce 
+        
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+
+        losses.update(loss.item())
+        labels.append(label.detach().cpu().numpy())
+        images.append(image_b.detach().cpu().numpy())
+        
+        
+        if (curr_iter + 1) % args.num_eval_iters == 0:        
+            test_loss, test_AUROCs, test_Accus, test_Senss, test_Specs, test_Pre, test_Recall, test_F1 = epochVal_metrics(model, test_dataloader, mode='test') 
+      
+            torch.save(model.state_dict(), os.path.join(args.save_folder, 'save_models/model{epoch}.pth').format(epoch=curr_iter))
+                
+            with open(os.path.join(args.save_folder, 'final_results.txt'), 'a') as f:
+                f.write(f'test Epoch: {curr_iter+1}, AUC: {test_AUROCs:.5f}, ACC: {test_Accus:.5f}, Sens: {test_Senss:.5f}, Specs: {test_Specs:.5f}, Pre: {test_Pre:.5f}, Recall: {test_Recall:.5f}, F1: {test_F1:.5f}\n')
+                f.flush()
+            
+        curr_iter += 1
+
+        bar.set_description("Train Iter: {curr_iter:4}/{iter:4}. Loss: {loss:.4f}. ".format(
+            iter=args.num_train_iters, 
+            curr_iter = curr_iter,
+            loss=losses.avg
+            ))
+
+        bar.update()
+    bar.close()
+
+    
 
 def main(args):
     current_experiment_time = datetime.now().strftime('%Y%m%d_%T').replace(":", "")
