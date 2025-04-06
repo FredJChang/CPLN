@@ -10,7 +10,7 @@ Key components include:
 - PLCC
   
 ### Clone the repository
- git clone https://github.com/FredJChang/CPLN.git
+``` git clone https://github.com/FredJChang/CPLN.git
 
 ### Test a model 
- python test.py # for Papilledema 15
+``` python test.py # for Papilledema 15
