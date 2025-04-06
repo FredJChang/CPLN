@@ -9,8 +9,8 @@ Key components include:
 - UCS
 - PLCC
   
-## Clone the repository
-git clone https://github.com/FredJChang/CPLN.git
+### Clone the repository
+```bash git clone https://github.com/FredJChang/CPLN.git
 
-## Test a model 
-python test.py # for Papilledema 15
+### Test a model 
+```bash python test.py # for Papilledema 15
