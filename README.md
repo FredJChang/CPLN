@@ -6,8 +6,8 @@
 
 This project implements a deep learning framework designed to handle noisy labels.  
 Key components include:
-- UCS
-- PLCC
+- UCS.py # Uncertainty Consistency Selection module
+- PLCC.py # Pseudo Label Consistency Cleaning module
   
 ### Clone the repository
 ``` bash
